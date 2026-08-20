@@ -20,6 +20,9 @@ You can install the standard R dependencies directly from CRAN:
 ```R
 install.packages(c("BART", "grf", "dplyr", "ggplot2", "evd", "FNN", "tidyr", "devtools"))
 
+### 2. Install Development Packages from GitHub
+The competitor methods erf (Extremal Random Forests) and gbex (Gradient Boosting for Extremes) should be installed from their respective development repositories using devtools:
+
 # Install erf
 devtools::install_github("valeriegnecco/erf")
 
