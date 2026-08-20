@@ -15,13 +15,15 @@ This repository provides the scripts to replicate the simulation studies of the 
 ## Installation & Prerequisites
 To run the simulation scripts, please make sure you have the following R packages installed.
 
-### 1. Install CRAN Packages
-You can install the standard R dependencies directly from CRAN:
+
 ```R
+
+### 1. Install CRAN Packages
+# You can install the standard R dependencies directly from CRAN:
 install.packages(c("BART", "grf", "dplyr", "ggplot2", "evd", "FNN", "tidyr", "devtools"))
 
 ### 2. Install Development Packages from GitHub
-The competitor methods erf (Extremal Random Forests) and gbex (Gradient Boosting for Extremes) should be installed from their respective development repositories using devtools:
+# The competitor methods erf (Extremal Random Forests) and gbex (Gradient Boosting for Extremes) should be installed from their respective development repositories using devtools:
 
 # Install erf
 devtools::install_github("valeriegnecco/erf")
