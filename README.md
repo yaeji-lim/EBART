@@ -30,3 +30,8 @@ devtools::install_github("valeriegnecco/erf")
 
 # Install gbex
 devtools::install_github("mathiasvelthoen/gbex")
+```
+
+## Note on Execution Time
+
+By default, the number of Monte Carlo replications M is set to 100 (to replicate the full results of the paper), which might take significant computational time to run. For a quick test run to verify the scripts, you can edit the script and set M to a smaller value (e.g., M <- 5):
