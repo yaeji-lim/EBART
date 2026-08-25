@@ -29,7 +29,7 @@ install.packages(c("BART", "grf", "dplyr", "ggplot2", "evd", "FNN", "tidyr", "de
 devtools::install_github("nicolagnecco/erf")
 
 # Install gbex
-devtools::install_github("mathiasvelthoen/gbex")
+devtools::install_github("JVelthoen/gbex")
 ```
 
 ## Note on Execution Time
