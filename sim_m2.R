@@ -23,7 +23,9 @@ taus <- c(0.99, 0.995, 0.999)
 ## intermediate quantile
 tau0 <- 0.8
 
+## number of nearest neighbors for GPD local likelihood estimation
 K <- 100
+## maximum number of anchor points to use for Extreme-BART parameter smoothing
 N_a_max <- 120
 
 
@@ -395,13 +397,13 @@ var_sel_table_format <- var_sel_df %>%
     Rank_GBEX_mean  = mean(Rank_GBEX),
     Rank_EBART_mean = mean(Rank_EBART),
     
-    TP_ERF_mean     = mean(TP_ERF),
-    TP_GBEX_mean    = mean(TP_GBEX),
-    TP_EBART_mean   = mean(TP_EBART),
-    
     Top5_ERF_mean   = mean(Top5_ERF),
     Top5_GBEX_mean  = mean(Top5_GBEX),
     Top5_EBART_mean = mean(Top5_EBART),
+    
+    TP_ERF_mean     = mean(TP_ERF),
+    TP_GBEX_mean    = mean(TP_GBEX),
+    TP_EBART_mean   = mean(TP_EBART),
     .groups = "drop"
   ) %>%
   pivot_longer(
@@ -417,11 +419,17 @@ var_sel_table_format <- var_sel_df %>%
   mutate(
     Metric = case_when(
       Metric == "Rank" ~ "Avg. Rank of 5 Signals",
-      Metric == "TP"   ~ "Avg. Detection Ratio (cutoff > 0.1)",
       Metric == "Top5" ~ "Avg. Detection Ratio (Top 5)",
+      Metric == "TP"   ~ "Avg. Detection Ratio (cutoff > 0.1)",
       TRUE ~ Metric
-    )
+    ),
+    Metric = factor(Metric, levels = c(
+      "Avg. Rank of 5 Signals",
+      "Avg. Detection Ratio (Top 5)",
+      "Avg. Detection Ratio (cutoff > 0.1)"
+    ))
   ) %>%
+  arrange(p, Metric) %>%
   select(p, Metric, ERF, GBEX, `Extreme-BART` = EBART)
 
 
