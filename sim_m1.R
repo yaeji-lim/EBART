@@ -23,6 +23,11 @@ taus <- c(0.99, 0.995, 0.999)
 ## intermediate quantile
 tau0 <- 0.8
 
+## number of nearest neighbors for GPD local likelihood estimation
+K <- 100
+## maximum number of anchor points to use for Extreme-BART parameter smoothing
+N_a_max <- 120
+
 
 # ---------------------------------------------------------
 # Functions
@@ -51,52 +56,52 @@ for (p in p_values) {
   varimp_erf <- matrix(0, M, p)
   varimp_gbex <- matrix(0, M, p)
   varimp_ebart <- matrix(0, M, p)
-
+  
   # Top 5 detection tracking
   det_erf <- matrix(0, M, 5)
   det_gbex <- matrix(0, M, 5)
   det_ebart <- matrix(0, M, 5)
-
+  
   for (m in 1:M) {
     cat("\n===================================\n")
     cat("Monte Carlo Repetition:", m, "/", M, "\n")
     cat("===================================\n")
-
+    
     # 1. Data Gen
     set.seed(1000 * p + m)
     x.train <- matrix(runif(n * p), n, p)
     x.test <- matrix(runif(n_test * p), n_test, p)
     y.train <- get_scale(x.train) * rt(n, df = df_t)
     y.test <- get_scale(x.test) * rt(n_test, df = df_t)
-
+    
     true_sigma_test <- get_scale(x.test)
     true_xi <- 1 / df_t
-
+    
     # 2. ERF
     fit_u <- erf(x.train, y.train, intermediate_quantile = tau0)
     u_test_hat <- as.vector(predict(fit_u, newdata = x.test, quantiles = tau0))
     erf_pred <- predict(fit_u, newdata = x.test, quantiles = taus)
-
+    
     vi_erf <- as.vector(variable_importance(fit_u$quantile_forest))
     varimp_erf[m, ] <- vi_erf
     top5_erf <- order(vi_erf, decreasing = TRUE)[1:5]
     for (v in 1:5) {
       if (v %in% top5_erf) det_erf[m, v] <- 1
     }
-
+    
     # 3. GBEX
     u_train_hat <- as.vector(predict(fit_u, newdata = x.train, quantiles = tau0))
     z_train_full <- y.train - u_train_hat
     pos_idx <- which(z_train_full > 0)
     z_train_pos <- z_train_full[pos_idx]
     x_train_pos <- x.train[pos_idx, ]
-
+    
     fit_gbex <- try(gbex(y = z_train_pos, X = data.frame(x_train_pos), B = 50), silent = TRUE)
     if (!inherits(fit_gbex, "try-error")) {
       gbex_pred <- predict(fit_gbex, newdata = data.frame(x.test))
       gbex_sigma_hat <- gbex_pred[, 1]
       gbex_xi_hat <- gbex_pred[, 2]
-
+      
       vi_full <- rep(0, p)
       for (i in 1:length(fit_gbex$trees_sigma)) {
         imp <- fit_gbex$trees_sigma[[i]]$tree$variable.importance
@@ -113,18 +118,17 @@ for (p in p_values) {
       gbex_xi_hat <- rep(0.1, n_test)
       vi_gbex <- rep(0, p)
     }
-
+    
     varimp_gbex[m, ] <- vi_gbex
     top5_gbex <- order(vi_gbex, decreasing = TRUE)[1:5]
     for (v in 1:5) {
       if (v %in% top5_gbex) det_gbex[m, v] <- 1
     }
-
+    
     # 4. Raw MLE (Local POT)
     raw_sigma_hat <- rep(NA, n_test)
     raw_xi_hat <- rep(NA, n_test)
-    k_neighbors <- 100
-    knn_idx <- get.knnx(data = x_train_pos, query = x.test, k = k_neighbors)$nn.index
+    knn_idx <- get.knnx(data = x_train_pos, query = x.test, k = K)$nn.index
     for (i in 1:n_test) {
       try(
         {
@@ -137,14 +141,15 @@ for (p in p_values) {
     }
     raw_sigma_hat[is.na(raw_sigma_hat)] <- median(raw_sigma_hat, na.rm = TRUE)
     raw_xi_hat[is.na(raw_xi_hat)] <- median(raw_xi_hat, na.rm = TRUE)
-
+    
     # 5. Extreme-BART
-    n_anchors <- length(z_train_pos)
+    
+    n_anchors <-  length(z_train_pos)
     sigma_anchors <- rep(NA, n_anchors)
     xi_anchors <- rep(NA, n_anchors)
     for (j in 1:n_anchors) {
       dists <- colMeans((t(x_train_pos[, 1:5]) - x_train_pos[j, 1:5])^2)
-      neighbor_idx <- order(dists)[1:100]
+      neighbor_idx <- order(dists)[1:K]
       try(
         {
           fit <- fpot(z_train_pos[neighbor_idx], threshold = 0, model = "gpd")
@@ -154,15 +159,17 @@ for (p in p_values) {
         silent = TRUE
       )
     }
-    valid <- !is.na(sigma_anchors)
+    
+    #
+    valid <- !is.na(sigma_anchors) 
     x_anchors <- x_train_pos[valid, ]
     s_anchors <- sigma_anchors[valid]
     xi_a <- xi_anchors[valid]
-
+    
     fit_sigma_bart <- wbart(x_anchors, log(s_anchors), x.test = x.test, nskip = 500, ndpost = 2000, sparse = TRUE, printevery = 1000L)
     ebart_sigma_hat <- exp(fit_sigma_bart$yhat.test.mean)
     ebart_xi_hat <- rep(median(xi_a), n_test)
-
+    
     # FIXED: properly compute column means of the inclusion matrix
     var_counts <- fit_sigma_bart$varcount
     vi_ebart <- colMeans(var_counts > 0)
@@ -171,18 +178,18 @@ for (p in p_values) {
     for (v in 1:5) {
       if (v %in% top5_ebart) det_ebart[m, v] <- 1
     }
-
-
+    
+    
     # Calculate MSE
     for (k in 1:length(taus)) {
       tau <- taus[k]
       true_q <- get_true_quantile(tau, true_sigma_test, true_xi)
-
+      
       erf_q <- erf_pred[, k]
       g_q <- u_test_hat + gbex_sigma_hat * (((1 - tau) / (1 - tau0))^(-gbex_xi_hat) - 1) / gbex_xi_hat
       raw_q <- u_test_hat + raw_sigma_hat * (((1 - tau) / (1 - tau0))^(-raw_xi_hat) - 1) / raw_xi_hat
       ebart_q <- u_test_hat + ebart_sigma_hat * (((1 - tau) / (1 - tau0))^(-ebart_xi_hat) - 1) / ebart_xi_hat
-
+      
       results_list[[length(results_list) + 1]] <- data.frame(
         p = p,
         Tau = tau,
@@ -193,8 +200,8 @@ for (p in p_values) {
       )
     }
   }
-
-
+  
+  
   for (m in 1:M) {
     # ERF
     imp_erf <- varimp_erf[m, ]
@@ -204,7 +211,7 @@ for (p in p_values) {
     norm_erf <- if (max_erf > 0) imp_erf / max_erf else imp_erf
     tp_erf <- sum(norm_erf[1:5] > 0.1) / 5
     top5_count_erf <- sum(det_erf[m, ]) / 5
-
+    
     # GBEX
     imp_gbex <- varimp_gbex[m, ]
     rank_gbex <- rank(-imp_gbex, ties.method = "first")
@@ -213,7 +220,7 @@ for (p in p_values) {
     norm_gbex <- if (max_gbex > 0) imp_gbex / max_gbex else imp_gbex
     tp_gbex <- sum(norm_gbex[1:5] > 0.1) / 5
     top5_count_gbex <- sum(det_gbex[m, ]) / 5
-
+    
     # EBART
     imp_ebart <- varimp_ebart[m, ]
     rank_ebart <- rank(-imp_ebart, ties.method = "first")
@@ -222,7 +229,7 @@ for (p in p_values) {
     norm_ebart <- if (max_ebart > 0) imp_ebart / max_ebart else imp_ebart
     tp_ebart <- sum(norm_ebart[1:5] > 0.1) / 5
     top5_count_ebart <- sum(det_ebart[m, ]) / 5
-
+    
     var_sel_list[[length(var_sel_list) + 1]] <- data.frame(
       Rep = m,
       p = p,
