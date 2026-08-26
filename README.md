@@ -46,4 +46,5 @@ By default, the number of Monte Carlo replications M is set to 100 (to replicate
 The simulations were conducted and tested under the following environment:
 * **R version**: `4.2.3 (2023-03-15)`
 * **Key Package Version**: `BART (v2.9.10)`
-** Due to differences in BLAS/LAPACK implementations, compiler optimizations, or minor changes across R/package versions, simulation results may exhibit slight numerical variations even when random seeds are fixed.
+
+Due to differences in BLAS/LAPACK implementations, compiler optimizations, or minor changes across R/package versions, simulation results may exhibit slight numerical variations even when random seeds are fixed.
