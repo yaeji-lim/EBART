@@ -197,7 +197,7 @@ for (p in p_values) {
         Raw_MLE = mean((true_q - raw_q)^2, na.rm = TRUE),
         ERF = mean((true_q - erf_q)^2, na.rm = TRUE),
         GBEX = mean((true_q - g_q)^2, na.rm = TRUE),
-        EBART = mean((true_q - ebart_q)^2, na.rm = TRUE)
+        Extreme_BART = mean((true_q - ebart_q)^2, na.rm = TRUE)
       )
     }
   }
@@ -260,8 +260,8 @@ summary_df <- mse_df %>%
     ERF_SE       = sd(ERF, na.rm = TRUE) / sqrt(n()),
     GBEX_Mean    = mean(GBEX, na.rm = TRUE),
     GBEX_SE      = sd(GBEX, na.rm = TRUE) / sqrt(n()),
-    EBART_Mean   = mean(EBART, na.rm = TRUE),
-    EBART_SE     = sd(EBART, na.rm = TRUE) / sqrt(n()),
+    EBART_Mean   = mean(Extreme_BART, na.rm = TRUE),
+    EBART_SE     = sd(Extreme_BART, na.rm = TRUE) / sqrt(n()),
     .groups      = "drop"
   )
 
@@ -281,7 +281,7 @@ print(summary_print)
 # 2. MSE Boxplot
 mse_long <- mse_df %>%
   pivot_longer(
-    cols = c(Raw_MLE, ERF, GBEX, EBART),
+    cols = c(Raw_MLE, ERF, GBEX, Extreme_BART),
     names_to = "Method",
     values_to = "MSE"
   )
