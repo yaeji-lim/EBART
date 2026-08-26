@@ -85,7 +85,7 @@ for (p in p_values) {
   det_ebart <- matrix(0, M, 5)
   
   for (m in 1:M) {
- 
+    
     set.seed(1000 * p + m)
     train_data <- generate_model2_data(n, p)
     test_data  <- generate_model2_data(n_test, p)
@@ -102,7 +102,7 @@ for (p in p_values) {
     u_test_hat  <- as.vector(predict(fit_u, newdata = x.test, quantiles = tau0))
     
     # ERF variable importance
-  
+    
     vi_erf <- as.vector(variable_importance(fit_u$quantile_forest))
     varimp_erf[m, ] <- vi_erf
     top5_erf <- order(vi_erf, decreasing = TRUE)[1:5]
@@ -130,15 +130,15 @@ for (p in p_values) {
     
     gbex_sigma_hat <- rep(1, n_test)
     gbex_xi_hat <- rep(0.1, n_test)
-
-
-      cor_vals <- abs(cor(x_train_pos, z_train_pos))
-      cor_vals[is.na(cor_vals)] <- 0
-      top_vars <- order(cor_vals, decreasing = TRUE)[1:min(20, p)]
-      
-      fit_gbex <- gbex(y = z_train_pos, X = data.frame(x_train_pos[, top_vars]), B = 30, silent = TRUE)
-      
-      if (!inherits(fit_gbex, "try-error")) {
+    
+    
+    cor_vals <- abs(cor(x_train_pos, z_train_pos))
+    cor_vals[is.na(cor_vals)] <- 0
+    top_vars <- order(cor_vals, decreasing = TRUE)[1:min(20, p)]
+    
+    fit_gbex <- gbex(y = z_train_pos, X = data.frame(x_train_pos[, top_vars]), B = 30, silent = TRUE)
+    
+    if (!inherits(fit_gbex, "try-error")) {
       gbex_pred <- predict(fit_gbex, newdata = data.frame(x.test[, top_vars]))
       gbex_sigma_hat <- gbex_pred[, 1]
       gbex_xi_hat = gbex_pred[, 2]
@@ -153,7 +153,7 @@ for (p in p_values) {
           vi_full[vidx] <- vi_full[vidx] + imp
         }
       }
-  
+      
       if(sum(vi_full) > 0) vi_full <- vi_full / sum(vi_full)
       vi_gbex <- vi_full
     } else {
@@ -167,7 +167,7 @@ for (p in p_values) {
     for(v in 1:5) { if(v %in% top5_gbex) det_gbex[m, v] <- 1 }
     
     
-
+    
     for (tk in 1:length(taus)) {
       t_val <- taus[tk]
       gbex_q[, tk] <- u_test_hat + (gbex_sigma_hat / gbex_xi_hat) * (((1 - t_val)/(1 - tau0))^(-gbex_xi_hat) - 1)
@@ -247,7 +247,7 @@ for (p in p_values) {
     
     
     
- 
+    
     
     
     
@@ -432,7 +432,8 @@ var_sel_table_format <- var_sel_df %>%
     ))
   ) %>%
   arrange(p, Metric) %>%
-  select(p, Metric, ERF, GBEX, `Extreme-BART` = EBART)
+  select(p, Metric, ERF, GBEX, `Extreme-BART` = EBART) %>%
+  mutate(across( c(ERF, GBEX, `Extreme-BART`), ~ round(.x,2)))
 
 
 print(as.data.frame(var_sel_table_format), row.names = FALSE)
@@ -476,6 +477,3 @@ p_plot <- ggplot(df_plot, aes(x=Variable, y=Importance, fill=Type)) +
 
 
 p_plot
-
-
-
