@@ -24,6 +24,11 @@ install.packages(c("BART", "grf", "dplyr", "ggplot2", "evd", "FNN", "tidyr", "de
 
 ### 2. Install Development Packages from GitHub
 # The competitor methods erf (Extremal Random Forests) and gbex (Gradient Boosting for Extremes) should be installed from their respective development repositories using devtools:
+# In some R versions or system configurations, installation via
+# install_github() may fail. If this occurs, please download
+# the package source from the corresponding GitHub repository
+# and install it locally.
+
 
 # Install erf
 devtools::install_github("nicolagnecco/erf")
