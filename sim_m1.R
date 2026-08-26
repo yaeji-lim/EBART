@@ -9,7 +9,6 @@ library(FNN)
 library(tidyr)
 library(POT)
 library(treeClust)
-
 # ---------------------------------------------------------
 # Input
 # ---------------------------------------------------------
@@ -310,21 +309,25 @@ mse_plot <- ggplot(mse_long, aes(x = Method, y = MSE, fill = Method)) +
 mse_plot
 
 
-# Bind variable selection list into a data frame
+
+# 3.  Variable Selection Summary Table
+
 var_sel_df <- bind_rows(var_sel_list)
 
 var_sel_table_format <- var_sel_df %>%
   group_by(p) %>%
   summarise(
-    Rank_ERF_mean = mean(Rank_ERF),
-    Rank_GBEX_mean = mean(Rank_GBEX),
+    Rank_ERF_mean   = mean(Rank_ERF),
+    Rank_GBEX_mean  = mean(Rank_GBEX),
     Rank_EBART_mean = mean(Rank_EBART),
-    TP_ERF_mean = mean(TP_ERF),
-    TP_GBEX_mean = mean(TP_GBEX),
-    TP_EBART_mean = mean(TP_EBART),
-    Top5_ERF_mean = mean(Top5_ERF),
-    Top5_GBEX_mean = mean(Top5_GBEX),
+    
+    Top5_ERF_mean   = mean(Top5_ERF),
+    Top5_GBEX_mean  = mean(Top5_GBEX),
     Top5_EBART_mean = mean(Top5_EBART),
+    
+    TP_ERF_mean     = mean(TP_ERF),
+    TP_GBEX_mean    = mean(TP_GBEX),
+    TP_EBART_mean   = mean(TP_EBART),
     .groups = "drop"
   ) %>%
   pivot_longer(
@@ -340,15 +343,25 @@ var_sel_table_format <- var_sel_df %>%
   mutate(
     Metric = case_when(
       Metric == "Rank" ~ "Avg. Rank of 5 Signals",
-      Metric == "TP" ~ "Avg. Detection Ratio (cutoff > 0.1)",
       Metric == "Top5" ~ "Avg. Detection Ratio (Top 5)",
+      Metric == "TP"   ~ "Avg. Detection Ratio (cutoff > 0.1)",
       TRUE ~ Metric
-    )
+    ),
+    Metric = factor(Metric, levels = c(
+      "Avg. Rank of 5 Signals",
+      "Avg. Detection Ratio (Top 5)",
+      "Avg. Detection Ratio (cutoff > 0.1)"
+    ))
   ) %>%
-  select(p, Metric, ERF, GBEX, `Extreme-BART` = EBART)
+  arrange(p, Metric) %>%
+  select(p, Metric, ERF, GBEX, `Extreme-BART` = EBART)%>%
+  mutate(
+    across(c(ERF, GBEX, `Extreme-BART`), ~ round(.x, 2))
+  )
 
 
 print(as.data.frame(var_sel_table_format), row.names = FALSE)
+
 
 
 # 4. Variable Selection Plot (Single representative run, normalized by max)
