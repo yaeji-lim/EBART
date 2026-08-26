@@ -39,3 +39,11 @@ devtools::install_github("JVelthoen/gbex")
 ## Note on Execution Time
 
 By default, the number of Monte Carlo replications M is set to 100 (to replicate the full results of the paper), which might take significant computational time to run. For a quick test run to verify the scripts, you can edit the script and set M to a smaller value (e.g., M <- 5):
+
+
+### Computational Environment
+
+The simulations were conducted and tested under the following environment:
+* **R version**: `4.2.3 (2023-03-15)`
+* **Key Package Version**: `BART (v2.9.10)`
+** Due to differences in BLAS/LAPACK implementations, compiler optimizations, or minor changes across R/package versions, simulation results may exhibit slight numerical variations even when random seeds are fixed.
